@@ -1,12 +1,13 @@
-# Image required by the subject
-FROM debian:bullseye
+# Use the official Nginx image as a base
+FROM nginx:alpine
 
-# Update and install nginx
-RUN apt update && apt install nginx -y
+# Copy the custom nginx.conf to the container
+COPY conf/nginx.conf /etc/nginx/nginx.conf
 
-# Install OpenSSL for certificate
-RUN apt install openssl -y
+# Copy the index.html file to the appropriate directory
+COPY conf/index.html /usr/share/nginx/html/index.html
 
-COPY nginx.conf /etc/nginx/
+CMD [ "chmod 777 /usr/share/nginx/html/index.html" ]
 
+# Expose port 8080
 EXPOSE 443
