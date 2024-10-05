@@ -1,4 +1,10 @@
 #!/bin/sh
+
+# Ensure required environment variables are set
+: "${DB_NAME:?Environment variable DB_NAME is not set.}"
+: "${DB_USER:?Environment variable DB_USER is not set.}"
+: "${DB_PASSWORD:?Environment variable DB_PASSWORD is not set.}"
+
 # Start MariaDB
 # Inicia o serviço MariaDB no container
 echo "STARTING MARIA_DB named -> ${DB_NAME}"
@@ -29,7 +35,6 @@ mariadb -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSW
 # Grant privileges to user
 mariadb -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';"
 
-#mariadb -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('${DB_PASSWORD_ROOT}');"
 
 # Flush privileges to apply changes
 # Isto força mariadb a recarregar as tabelas de permições, fazendo com que
