@@ -25,6 +25,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    entrypoint: /config-mariadb.sh
   wordpress:
     image: wordpress:tdesous
     container_name: wordpress
@@ -38,6 +39,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    entrypoint: ./config-wordpress.sh
 
 
 volumes:
