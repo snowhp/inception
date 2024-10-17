@@ -14,34 +14,41 @@
 : "${WP_USER_PASS:?Environment variable WP_USER_PASS is not set.}"
 : "${WP_USER_ROLE:?Environment variable WP_USER_ROLE is not set.}"
 
-# Download wp-cli if it doesn't exist. Double check
+# Variables
+PHP_VERSION="7.4"
+WP_PATH="/var/www/wordpress"
+PHP_FPM_CONF="/etc/php/${PHP_VERSION}/fpm/pool.d/www.conf"
+
+# Download wp-cli if it doesn't exist
 if [ ! -f /usr/local/bin/wp ]; then
+    echo "Downloading wp-cli..."
     curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     mv wp-cli.phar /usr/local/bin/wp
     chmod +x /usr/local/bin/wp  # Make wp-cli executable
+else
+    echo "wp-cli already exists, skipping download."
 fi
 
-# Wordpress folder setup
-mkdir -p /var/www/wordpress
-chmod -R 755 /var/www/wordpress
+# Set up WordPress directory
+echo "Setting up WordPress directory..."
+mkdir -p "$WP_PATH"
+chmod -R 755 "$WP_PATH"
+chown -R www-data:www-data "$WP_PATH"
 
-# Change ownership to the www-data user, the default user for nginx
-chown -R www-data:www-data /var/www/wordpress
-
-# Function to ping MariaDB to check if it's running on port 3306
+# Function to check if MariaDB is running
 ping_mariadb() {
-    nc -zv mariadb 3306
+    nc -zv mariadb 3306 >/dev/null 2>&1
     return $?
 }
 
-start_time=$(date +%s) # Current time in seconds
-end_time=$((start_time + 60)) # Allow up to 60 seconds for MariaDB to start
+start_time=$(date +%s)
+end_time=$((start_time + 60))
 
-# Check if MariaDB is running
-while [ $(date +%s) -lt $end_time ]; do
-    ping_mariadb
-    if [ $? -eq 0 ]; then
-        echo "MariaDB is running"
+# Wait for MariaDB to be ready
+echo "Checking if MariaDB is running..."
+while [ $(date +%s) -lt "$end_time" ]; do
+    if ping_mariadb; then
+        echo "MariaDB is running."
         break
     else
         echo "Waiting for MariaDB to start..."
@@ -49,33 +56,67 @@ while [ $(date +%s) -lt $end_time ]; do
     fi
 done
 
-# If the timeout is reached, exit with an error
-if [ $(date +%s) -ge $end_time ]; then
+# Timeout if MariaDB does not start
+if [ $(date +%s) -ge "$end_time" ]; then
     echo "MariaDB did not start within the expected time."
     exit 1
 fi
 
 # Install WordPress
-cd /var/www/wordpress
+cd "$WP_PATH"
 
-# Download WordPress
-wp core download --allow-root
+# Download WordPress core files if not present
+if [ ! -f wp-config.php ]; then
+    echo "Downloading WordPress core files..."
+    wp core download --allow-root
+else
+    echo "WordPress files already present, skipping download."
+fi
 
-# Create wp-config.php
-wp core config --dbhost=mariadb:3306 --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASSWORD" --allow-root
+# Configure wp-config.php if not present
+if [ ! -f wp-config.php ]; then
+    echo "Creating wp-config.php..."
+    wp core config --dbhost=mariadb:3306 --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASSWORD" --allow-root
+else
+    echo "wp-config.php already exists, skipping configuration."
+fi
 
-# Install WordPress
-wp core install --url="$DOMAIN_NAME" --title="$WP_TITLE" --admin_user="$WP_ADMIN_N" --admin_password="$WP_ADMIN_P" --admin_email="$WP_ADMIN_E" --allow-root
+# Install WordPress if it's not installed
+if ! wp core is-installed --allow-root; then
+    echo "Installing WordPress..."
+    wp core install --url="$DOMAIN_NAME" --title="$WP_TITLE" --admin_user="$WP_ADMIN_N" --admin_password="$WP_ADMIN_P" --admin_email="$WP_ADMIN_E" --allow-root
+else
+    echo "WordPress is already installed, skipping installation."
+fi
 
-# Create a new user
-wp user create "$WP_USER_NAME" "$WP_USER_EMAIL" --user_pass="$WP_USER_PASS" --role="$WP_USER_ROLE" --allow-root
+# Update WordPress URLs in case the domain has changed
+echo "Updating WordPress URLs..."
+wp option update home "https://${DOMAIN_NAME}" --allow-root
+wp option update siteurl "https://${DOMAIN_NAME}" --allow-root
 
-# Configure PHP
-# Change listen port from unix socket to 9000 so Nginx can communicate with PHP
-sed -i 's@listen = /run/php/php7.4-fpm.sock@listen = 9000@; s/^;*user = .*/user = www-data/; s/^;*group = .*/group = www-data/' /etc/php/7.4/fpm/pool.d/www.conf
+# Create a new user if it doesn't exist
+if ! wp user get "$WP_USER_NAME" --allow-root >/dev/null 2>&1; then
+    echo "Creating WordPress user ${WP_USER_NAME}..."
+    wp user create "$WP_USER_NAME" "$WP_USER_EMAIL" --user_pass="$WP_USER_PASS" --role="$WP_USER_ROLE" --allow-root
+else
+    echo "User ${WP_USER_NAME} already exists, skipping creation."
+fi
+
+# Configure PHP-FPM
+echo "Configuring PHP-FPM..."
+
+if [ -f "$PHP_FPM_CONF" ]; then
+    sed -i 's@listen = /run/php/php7.4-fpm.sock@listen = 9000@' "$PHP_FPM_CONF"
+    sed -i 's/^;*user = .*/user = www-data/' "$PHP_FPM_CONF"
+    sed -i 's/^;*group = .*/group = www-data/' "$PHP_FPM_CONF"
+else
+    echo "PHP-FPM configuration file not found: $PHP_FPM_CONF"
+    exit 1
+fi
 
 # Ensure the PHP run directory exists
 mkdir -p /var/run/php
 
 # Start PHP-FPM in the foreground
-/usr/sbin/php-fpm7.4 -F
+echo "Starting PHP-FPM..."
+/usr/sbin/php-fpm"${PHP_VERSION}" -F
