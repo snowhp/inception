@@ -16,7 +16,6 @@ done
 
 echo "Mariadb just started"
 
-# CHECKAR SE CORRE NA 2X OU DA ERRO
 mariadb -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME};" || {
     echo "Error creating database ${DB_NAME}"
     exit 1
