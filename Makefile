@@ -1,44 +1,50 @@
+GREEN := \033[0;32m
+RED := \033[0;31m
+YELLOW := \033[1;33m
+NC := \033[0m
+CHECKMARK := +
+CROSSMARK := -
+
 # Define the name of your Docker Compose project
 PROJECT_NAME=inception
 
 # Define the name of your Docker Compose file
-DOCKER_COMPOSE_FILE=docker-compose.yml
+DOCKER_COMPOSE_FILE=srcs/docker-compose.yml
 
 # Define the name of the Docker Compose command to use
 DOCKER_COMPOSE=docker compose -p $(PROJECT_NAME) -f $(DOCKER_COMPOSE_FILE)
 
-# Define the name of the Docker image to build
-DOCKER_IMAGE=my-image
+# Define colors and symbols
 
-# Define the tag to use for the Docker image
-DOCKER_TAG=my-tag
+# Define targets
+.PHONY: all prepare build delete run stop remove rebuild
 
-# Define the name of the Docker container to run
-DOCKER_CONTAINER=my-container
+all: prepare run
 
-# Define the target to build the Docker image
+prepare:
+	@mkdir -p ~/data/mariadb 2>/dev/null && echo "$(GREEN)$(CHECKMARK) Created ~/data/mariadb$(NC)" || echo "$(RED)$(CROSSMARK) Failed to create ~/data/mariadb$(NC)"
+	@mkdir -p ~/data/wordpress 2>/dev/null && echo "$(GREEN)$(CHECKMARK) Created ~/data/wordpress$(NC)" || echo "$(RED)$(CROSSMARK) Failed to create ~/data/wordpress$(NC)"
+	@hostsed add 127.0.0.1 tde-sous.42.fr >/dev/null 2>&1 && echo "$(GREEN)$(CHECKMARK) Added 'tde-sous.42.fr' to hosts file$(NC)" || echo "$(RED)$(CROSSMARK) Failed to add 'tde-sous.42.fr' to hosts file$(NC)"
+
 build:
+	@echo "$(YELLOW)Building with Docker Compose...$(NC)"
 	$(DOCKER_COMPOSE) build
 
-# Define the target to delete the Docker container and volumes
 delete:
+	@echo "$(YELLOW)Deleting Docker containers and volumes...$(NC)"
 	$(DOCKER_COMPOSE) down -v
 
-# Define the target to run the Docker container
 run:
+	@echo "$(YELLOW)Starting Docker containers...$(NC)"
 	$(DOCKER_COMPOSE) up -d
+	@echo "$(GREEN)$(CHECKMARK) Docker is up and running!$(NC)"
 
-# Define the target to stop the Docker container
 stop:
+	@echo "$(YELLOW)Stopping Docker containers...$(NC)"
 	$(DOCKER_COMPOSE) stop
 
-# Define the target to remove the Docker container
 remove:
+	@echo "$(YELLOW)Removing Docker containers...$(NC)"
 	$(DOCKER_COMPOSE) rm -f
 
-# Define the target to rebuild the Docker container
 rebuild: delete build run
-
-# Define the target to tag the Docker image
-tag:
-	docker tag $(DOCKER_IMAGE) $(DOCKER_IMAGE):$(DOCKER_TAG)
