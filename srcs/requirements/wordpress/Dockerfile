@@ -16,5 +16,4 @@ RUN rm -rf /var/lib/apt/lists/*
 
 COPY ./conf/config-wordpress.sh /config-wordpress.sh
 
-# Ensure that script was permission to execute.
 RUN chmod +x config-wordpress.sh
