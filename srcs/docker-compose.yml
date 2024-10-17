@@ -47,14 +47,14 @@ volumes:
     name: mariadb_volume
     driver: local
     driver_opts:
-      device: /home/user/data/mariadb # checkar com makefile, subject
+      device: ~/data/mariadb # checkar com makefile, subject
       o: bind
       type: none
   wordpress_volume:
     name: wordpress_volume
     driver: local
     driver_opts:
-      device: /home/user/data/wordpress # checkar com makefile, subject
+      device: ~/data/wordpress # checkar com makefile, subject
       o: bind
       type: none
 
