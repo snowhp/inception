@@ -77,6 +77,10 @@ fi
 if [ ! -f wp-config.php ]; then
     echo "Creating wp-config.php..."
     wp core config --dbhost=mariadb:3306 --dbname="$DB_NAME" --dbuser="$DB_USER" --dbpass="$DB_PASSWORD" --allow-root
+
+    # Add WP_HOME and WP_SITEURL to wp-config.php
+    wp config set WP_HOME "https://${DOMAIN_NAME}" --allow-root
+    wp config set WP_SITEURL "https://${DOMAIN_NAME}" --allow-root
 else
     echo "wp-config.php already exists, skipping configuration."
 fi
@@ -84,7 +88,7 @@ fi
 # Install WordPress if it's not installed
 if ! wp core is-installed --allow-root; then
     echo "Installing WordPress..."
-    wp core install --url="$DOMAIN_NAME" --title="$WP_TITLE" --admin_user="$WP_ADMIN_N" --admin_password="$WP_ADMIN_P" --admin_email="$WP_ADMIN_E" --allow-root
+    wp core install --url="https://${DOMAIN_NAME}" --title="$WP_TITLE" --admin_user="$WP_ADMIN_N" --admin_password="$WP_ADMIN_P" --admin_email="$WP_ADMIN_E" --allow-root
 else
     echo "WordPress is already installed, skipping installation."
 fi
