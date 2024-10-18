@@ -47,4 +47,4 @@ remove:
 	@echo "$(YELLOW)Removing Docker containers...$(NC)"
 	$(DOCKER_COMPOSE) rm -f
 
-rebuild: delete build run
+rebuild: delete build prepare run
