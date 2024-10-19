@@ -24,7 +24,7 @@ all: prepare run
 prepare:
 	@mkdir -p ~/data/mariadb 2>/dev/null && echo "$(GREEN)$(CHECKMARK) Created ~/data/mariadb$(NC)" || echo "$(RED)$(CROSSMARK) Failed to create ~/data/mariadb$(NC)"
 	@mkdir -p ~/data/wordpress 2>/dev/null && echo "$(GREEN)$(CHECKMARK) Created ~/data/wordpress$(NC)" || echo "$(RED)$(CROSSMARK) Failed to create ~/data/wordpress$(NC)"
-	@hostsed add 127.0.0.1 tde-sous.42.fr >/dev/null 2>&1 && echo "$(GREEN)$(CHECKMARK) Added 'tde-sous.42.fr' to hosts file$(NC)" || echo "$(RED)$(CROSSMARK) Failed to add 'tde-sous.42.fr' to hosts file$(NC)"
+	@sudo hostsed add 127.0.0.1 tde-sous.42.fr >/dev/null 2>&1 && echo "$(GREEN)$(CHECKMARK) Added 'tde-sous.42.fr' to hosts file$(NC)" || echo "$(RED)$(CROSSMARK) Failed to add 'tde-sous.42.fr' to hosts file$(NC)"
 
 build:
 	@echo "$(YELLOW)Building with Docker Compose...$(NC)"
